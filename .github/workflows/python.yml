@@ -1,0 +1,42 @@
+# Publishes a tagged version of the Python package, python/, to PyPI as pethost-toolsets.
+#
+# This repository is a copy: Pethost's own repository holds the source and pushes it here with a
+# tag, python/v<version>, when the version changes. Nothing here is edited by hand but the
+# workflows, which are placed by hand.
+# PyPI takes the release by trusted publishing: no token is kept anywhere.
+#
+# By hand (workflow_dispatch) it publishes what main holds: for a tag whose own run failed on
+# this file as it then was, since a run again reads the file of the tag's commit.
+name: Python
+
+on:
+  push:
+    tags: ['python/v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+defaults:
+  run:
+    working-directory: python
+
+jobs:
+  publish:
+    name: Publish to PyPI
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: pipx install uv==0.12.23
+      - run: uv build
+      # The wheel installs, and imports with every extra.
+      - name: The package imports
+        run: |
+          uv venv
+          uv pip install "$(ls dist/*.whl)[browser,openai]"
+          .venv/bin/python -c 'import pethost_toolsets'
+      - run: uv publish
