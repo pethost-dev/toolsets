@@ -31,12 +31,12 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - run: pipx install uv==0.12.23
+      - run: pipx install uv==0.13.10
       - run: uv build
-      # The wheel installs, and imports with every extra.
+      # The wheel installs, and every driver imports with every extra.
       - name: The package imports
         run: |
           uv venv
-          uv pip install "$(ls dist/*.whl)[browser,openai]"
-          .venv/bin/python -c 'import pethost_toolsets'
+          uv pip install "$(ls dist/*.whl)[claude,openai,browser]"
+          .venv/bin/python -c 'import pethost_toolsets as t; [getattr(t, name) for name in t.__all__]'
       - run: uv publish
