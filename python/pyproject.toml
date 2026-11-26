@@ -1,0 +1,67 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pethost-toolsets"
+version = "0.1.0"
+description = "Claude's computer and browser toolsets and OpenAI's computer use, by toolsets and by code, on Pethost Agent Sandboxes."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Pethost" }]
+keywords = ["pethost", "sandbox", "microvm", "computer use", "browser use", "claude", "openai", "playwright", "ai agents"]
+classifiers = [
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
+]
+# pethost: 0.10 is the first SDK with the browser link and the wider ControlDesktop, and each
+# minor may change a type, so the range is one minor. Each model provider's SDK is an extra, as is
+# Playwright: a driver needs its provider's and, for a browser, Playwright.
+dependencies = [
+    "pethost>=0.10,<0.11",
+]
+
+[project.optional-dependencies]
+# The toolset classes (anthropic.tools.computer, anthropic.tools.browser), still beta: a major
+# may change them.
+claude = ["anthropic>=2,<3"]
+# The computer and browser toolsets' drivers (openai.lib.computer, openai.lib.browser), whose
+# interfaces this release is written against.
+openai = ["openai>=3.59,<4"]
+# 1.65: Page.get_by_ref (1.64), which resolves the refs read_page gives, and connect_over_cdp's
+# no_defaults (1.60), which leaves the desktop's Chrome its own settings.
+browser = ["playwright>=1.65"]
+
+[project.urls]
+Homepage = "https://pethost.dev/sandboxes/"
+Documentation = "https://pethost.dev/docs/sandboxes/claude-and-openai/"
+Repository = "https://github.com/pethost-dev/toolsets"
+Issues = "https://github.com/pethost-dev/toolsets/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["pethost_toolsets"]
+
+[tool.hatch.build.targets.sdist]
+include = ["/pethost_toolsets", "/examples", "/README.md", "/LICENSE"]
+
+[tool.pyright]
+include = ["pethost_toolsets", "examples"]
+pythonVersion = "3.11"
+typeCheckingMode = "strict"
+
+[tool.mypy]
+files = ["pethost_toolsets", "examples"]
+python_version = "3.11"
+strict = true
+warn_unreachable = true

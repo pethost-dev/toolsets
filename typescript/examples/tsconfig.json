@@ -1,0 +1,14 @@
+// The examples are type-checked against the package's sources, as a program would import it once
+// installed: `npm run check`. They are not built.
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": "..",
+    "allowImportingTsExtensions": true,
+    "paths": {
+      "pethost-toolsets/*": ["../src/*.ts"]
+    }
+  },
+  "include": ["."]
+}
