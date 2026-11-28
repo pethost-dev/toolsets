@@ -32,6 +32,10 @@ LOAD_WAIT_MS = 5_000
 LOADED = "document.readyState === 'complete'"
 """A page's load, as the page itself tells it, which navigate waits for LOAD_WAIT_MS at most."""
 
+PARSED = "document.readyState !== 'loading'"
+"""A page's document parsed, as the page itself tells it: what a step in a tab's history waits for,
+a page brought back from Chrome's back-forward cache firing no load events."""
+
 ERROR_PAGE = re.compile(r"^chrome-error:")
 ERROR_PAGE_MS = 2_000
 """How long Chrome's error page may take to show after a load failed."""

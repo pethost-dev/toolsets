@@ -100,11 +100,22 @@ export class Tabs {
     });
   }
 
-  /** A new tab, the active one. */
+  /** A new tab, the active one, brought to the front. */
   async open(): Promise<Page> {
     const page = await this.#context.newPage();
     this.activate(page);
+    await page.bringToFront();
     return page;
+  }
+
+  /**
+   * Closes the tab `tabId` names, else the active one; the last one is first given a blank tab
+   * beside it, as Chrome would quit with its last window.
+   */
+  async close(tabId: string | null | undefined): Promise<void> {
+    const page = await this.page(tabId);
+    if (this.#context.pages().length === 1) await this.open();
+    await page.close();
   }
 
   /** Every open tab, in the browser's order. */

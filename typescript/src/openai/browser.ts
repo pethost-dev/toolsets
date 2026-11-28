@@ -158,7 +158,6 @@ export class OpenAIBrowser implements BrowserDriver {
     const { tabs } = await this.#driving.ready(signal);
     return this.#driving.guard("new_tab", async () => {
       const page = await tabs.open();
-      await page.bringToFront();
       const failed = args.url === null ? undefined : landed(await navigate(page, args.url));
       const where = failed ? ` ${failed}` : "";
       const { opened, dialogs } = tabs.drain();
@@ -171,14 +170,9 @@ export class OpenAIBrowser implements BrowserDriver {
     return this.#act(signal, args.tab_id, "switch_tab", async () => undefined);
   }
 
-  /** Closes the tab; the last one is first given a blank tab beside it, as Chrome would quit with its last window. */
   async close_tab(args: BrowserArguments<"close_tab">, { signal }: Exec): Promise<string | undefined> {
-    const { tabs, context } = await this.#driving.ready(signal);
-    await this.#driving.guard("close_tab", async () => {
-      const page = await tabs.page(args.tab_id);
-      if (context.pages().length === 1) await (await tabs.open()).bringToFront();
-      await page.close();
-    });
+    const { tabs } = await this.#driving.ready(signal);
+    await this.#driving.guard("close_tab", () => tabs.close(args.tab_id));
     return notes(tabs.drain()) || undefined;
   }
 

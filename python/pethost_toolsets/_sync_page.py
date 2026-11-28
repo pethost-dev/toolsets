@@ -5,7 +5,8 @@ and does the same in the same order but for a script, which asyncio can give up 
 
 from __future__ import annotations
 
-from collections.abc import Generator, Sequence
+import time
+from collections.abc import Callable, Generator, Sequence
 from contextlib import contextmanager
 from typing import Any
 
@@ -20,6 +21,7 @@ from ._browser_shared import (
     NAVIGATE_TIMEOUT_MS,
     PAGE_BUSY,
     PAGE_QUESTION_MS,
+    PARSED,
     POLL_MS,
     SCRIPT_MS,
     PageRefusal,
@@ -135,9 +137,21 @@ def go(page: Page, url: str) -> Response | None:
 def step(page: Page, url: str) -> Response | None:
     word = url.strip().lower()
     if word == "back":
-        return page.go_back(timeout=NAVIGATE_TIMEOUT_MS, wait_until="domcontentloaded")
+        return history_step(page, page.go_back)
     if word == "forward":
-        return page.go_forward(timeout=NAVIGATE_TIMEOUT_MS, wait_until="domcontentloaded")
+        return history_step(page, page.go_forward)
     if word == "reload":
         return page.reload(timeout=NAVIGATE_TIMEOUT_MS, wait_until="domcontentloaded")
     return page.goto(given.address(url), timeout=NAVIGATE_TIMEOUT_MS, wait_until="domcontentloaded")
+
+
+def history_step(page: Page, move: Callable[..., Response | None]) -> Response | None:
+    """A step in the tab's history, done once its document is parsed. A page Chrome brings back from
+    its back-forward cache, which a Chrome Playwright did not start keeps on, fires no load events:
+    the step waits for its commit, then asks the page for its document's state, within what is left
+    of NAVIGATE_TIMEOUT_MS, where Playwright's wait for the events would last all of it."""
+    deadline = time.monotonic() + NAVIGATE_TIMEOUT_MS / 1000
+    response = move(timeout=NAVIGATE_TIMEOUT_MS, wait_until="commit")
+    left = max(1.0, (deadline - time.monotonic()) * 1000)
+    page.wait_for_function(PARSED, polling=POLL_MS, timeout=left).dispose()
+    return response

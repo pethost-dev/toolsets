@@ -5,7 +5,8 @@ which asyncio gives up waiting for whatever keeps it."""
 from __future__ import annotations
 
 import asyncio
-from collections.abc import AsyncGenerator, Sequence
+import time
+from collections.abc import AsyncGenerator, Awaitable, Callable, Sequence
 from contextlib import asynccontextmanager
 from typing import Any
 
@@ -20,6 +21,7 @@ from ._browser_shared import (
     NAVIGATE_TIMEOUT_MS,
     PAGE_BUSY,
     PAGE_QUESTION_MS,
+    PARSED,
     POLL_MS,
     SCRIPT_MS,
     PageRefusal,
@@ -115,9 +117,18 @@ async def go(page: Page, url: str) -> Response | None:
 async def step(page: Page, url: str) -> Response | None:
     word = url.strip().lower()
     if word == "back":
-        return await page.go_back(timeout=NAVIGATE_TIMEOUT_MS, wait_until="domcontentloaded")
+        return await history_step(page, page.go_back)
     if word == "forward":
-        return await page.go_forward(timeout=NAVIGATE_TIMEOUT_MS, wait_until="domcontentloaded")
+        return await history_step(page, page.go_forward)
     if word == "reload":
         return await page.reload(timeout=NAVIGATE_TIMEOUT_MS, wait_until="domcontentloaded")
     return await page.goto(given.address(url), timeout=NAVIGATE_TIMEOUT_MS, wait_until="domcontentloaded")
+
+
+async def history_step(page: Page, move: Callable[..., Awaitable[Response | None]]) -> Response | None:
+    """A step in the tab's history, done once its document is parsed: see _sync_page.history_step."""
+    deadline = time.monotonic() + NAVIGATE_TIMEOUT_MS / 1000
+    response = await move(timeout=NAVIGATE_TIMEOUT_MS, wait_until="commit")
+    left = max(1.0, (deadline - time.monotonic()) * 1000)
+    await (await page.wait_for_function(PARSED, polling=POLL_MS, timeout=left)).dispose()
+    return response

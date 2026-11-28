@@ -219,11 +219,7 @@ export class ClaudeBrowser extends BetaAbstractBrowserToolset20260801 {
 
   protected override async new_tab(ctx: Ctx): Promise<Beta.BetaBrowserStateTabEntry> {
     const { tabs } = await this.#driving.ready(ctx.signal);
-    return this.#driving.guard("new_tab", async () => {
-      const page = await tabs.open();
-      await page.bringToFront();
-      return entry(tabs, page);
-    });
+    return this.#driving.guard("new_tab", async () => entry(tabs, await tabs.open()));
   }
 
   protected override async list_tabs(ctx: Ctx): Promise<Beta.BetaBrowserStateTabEntry[]> {
@@ -234,14 +230,9 @@ export class ClaudeBrowser extends BetaAbstractBrowserToolset20260801 {
     return this.#on(ctx, input.tab_id, "switch_tab", (page, { tabs }) => entry(tabs, page));
   }
 
-  /** Closes the tab; the last one is first given a blank tab beside it, as Chrome would quit with its last window. */
   protected override async close_tab(ctx: Ctx, input: Beta.BetaBrowserCloseTabInput): Promise<void> {
-    const { tabs, context } = await this.#driving.ready(ctx.signal);
-    await this.#driving.guard("close_tab", async () => {
-      const page = await tabs.page(input.tab_id);
-      if (context.pages().length === 1) await (await tabs.open()).bringToFront();
-      await page.close();
-    });
+    const { tabs } = await this.#driving.ready(ctx.signal);
+    await this.#driving.guard("close_tab", () => tabs.close(input.tab_id));
   }
 
   async #click(ctx: Ctx, input: Beta.BetaBrowserLeftClickInput, options: Omit<ClickOptions, "modifiers">): Promise<void> {
